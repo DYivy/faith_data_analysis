@@ -1,0 +1,1447 @@
+---
+title: "Project Faith"
+author: "Mofiyinfoluwa Olatunji, Baike Zhu, Ying Du"
+output: pdf_document
+date: "2024-04-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+```
+
+# A. Abstract
+Today’s dynamic religious landscape shows us that where people come from, how much they earn, and what they know, and other socio-economic factors, can influence their beliefs and how they practice religion. This study uses detailed data from the US Religious Landscape Survey by the **Pew Forum on Religion & Public Life** to explore how socio-economic status (or SES for short), and other factors affect religious participation.
+
+We have demographic data characterizing people's gender, age, income, education, race, and where they live, and we're going to look for patterns in how they observe their religions and what they believe. Our goal is to understand how SES interacts and influences traditional beliefs and how closely religion is linked to satisfaction and political views.
+
+By using thorough analysis methods, this research will provide fresh insights into how socio-economic factors play a role in religious involvement, helping us better grasp the current and global religious dynamics.
+
+# B. Keywords
+Societal satisfaction. Religiosity. US Values Survey. Generalized linear/additive mixed models. Random Forest. Demographic Analysis. 
+
+# C. Introduction
+The U.S. Religious Landscape Survey, conducted by the Pew Forum on Religion & Public Life, is a thorough examination of the religious affiliations and practices of the American public. The main body of the survey was carried out in the summer of 2007 across the continental United States, encompassing a significant sample of 35,556 adults. Supplementary research involving approximately 200 residents each from Alaska and Hawaii followed in 2008. Since these numbers are not substantial enough to influence the overall trends under study, they are not included in the main dataset analysis. Furthermore, the dataset has certain limitations, including the exclusion of pivotal factors such as health—both mental and physical—and job satisfaction. 
+
+Over the past two decades, the newly emerging field of 'religion in economic history' has prompted more scholarly inquiries into the intricate link between socio-economic factors and religious beliefs (Jared Rubin et al., 2020). According to the study by Jared Rubin and his team (2020), there has been a dynamic interplay between economic and religious forces throughout history, mutually influencing societal development. Our dataset allows for the exploration of this interaction. By considering demographic variables such as sex, age, education, race, and geographic location, which can act as proxies for socio-economic status (SES), we aim to understand their impact on religious participation and belief systems. 
+
+Previous studies have established a complex relationship between socio-economic status (SES) and religious observance. Scott Schieman’s research from 2010 suggests that higher SES, often associated with higher levels of education, tends to correlate with a decline in traditional religious practices and beliefs. Meanwhile, Chaeyoon Lim and his colleagues have found that active participation in religious activities is linked to greater life satisfaction. Regarding political views, the Pew Research Center reports that individuals who are more devoutly religious often hold more conservative political ideologies. Our forthcoming research using our dataset will aim to explore these topics further to see if our survey data confirm or contradict these findings. 
+
+**Research questions: **
+
+1. How does Socio-Economic Factors Impact an individual's religious belief(believer/non-believer) 
+As mentioned previously, Schieman (2010) suggests that higher SES, often associated with higher levels of education, tends to correlate with a decline in traditional religious practices and beliefs. Based on the literature review, we have the hypothesis that believers have lower SES than non-believers. 
+
+2. How does Socio-Economic Factors Impact Individuals’ satisfaction?  
+Lim and Putnam (2010), their study shown that socio-economic factors play a significant role in shaping individual’s life satisfaction. Factors such as income, education, and marital status have been found to influence overall well-being and satisfaction with life. Also, variables like health and income are strong predictors of life satisfaction, highlighting the impact of socio-economic factors on an individual’s overall well-being. Meanwhile, Nezlek (2021), Graham and Crown (2014) both suggest that factors such as income, education and political orientation can impact individual’s satisfaction, because these factors always enables people with more means and agency to life choices, and therefore, they tend to emphasize evaluate well-being more.  
+
+# D Data Description
+The dataset primarily consists of questionnaires, with most variables being categorical. Initially, there were 135 features and 35,556 observations. After discarding features irrelevant to our research questions and those with a high number of missing values (exceeding 30%), we retained 58 variables. For most of the remaining features, we excluded responses like 'don't know' for questions about income, age, and marital status. However, we preserved some missing values as they were deemed meaningful for specific features, like voter registration and race. 
+
+Another target feature is satisfaction. According to Nezlek (2021), the research defined well-being by happiness, life satisfaction, and self-rated health. Koburtay (2022) defined well-being by the combination of six factors or indicators: positive relationships, environmental, mastery, autonomy, a feeling of purpose and meaning in life. By carefully reading through the code book of our dataset research, we decided to choose questions related to satisfaction as our measure of well-being. After removing questions with a high rate of missing values, we are left with four relevant questions about satisfaction with the country, personal life, standard of living, and family life. We eliminate all responses of "don't know" or "refused."  
+
+Nezlek (2021) includes sex, age, income, and education to be the main variable in his model when conducting similar research. Koenig et al. (2024) built the research assumption upon relationship between religion, mental, and social health, what is worth mentioning is they included mental health as the main goal. Graham and Crown (2014) also included gender and age in the model, and additionally, marital status was considered in this case. Moreover, household size and population density, frequency of religious service attendance, are also included in this case.  
+
+Referencing Nezlek (2021) and Koenig et al. (2024), and to control the model within the context of this research, the following main explanatory variables are tentatively chosen to be considered: 
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Variable name} & \textbf{Comments} \\
+\hline
+age & Respondent age (only those who are less than 97 years old are being counted) \\
+\hline
+income & Respondent income measured by the upper limit of the survey range \\
+\hline
+sex & Respondent gender \\
+\hline
+education\_isced & Respondent education level classified based on ISCED (UNESCO, 2011) \\
+\hline
+state & States within the United States of America \\
+\hline
+reltrad & Main religious tradition categories used throughout the Religious Landscape Survey reports. \\
+\hline
+q60 & Question to determine respondents born in US or not \\
+\hline
+\end{tabular}
+\caption{Description of some intially important Variables}
+\end{table}
+
+These variables were initially chosen, and some variables were transformed during data preprocessing because we felt that they might be useful explanatory variables that could significantly impact religious participation and belief systems. Below is a brief rationale for why each variable was chosen and the transformations applied:
+
+- **Age**: This variable is crucial as religious beliefs and practices can vary significantly across different age groups. To ensure a focused analysis, we excluded respondents aged 97 and older, as their small number could skew results.
+
+- **Income**: Income levels often correlate with educational attainment, geographic location, and access to resources, all of which can influence religious practices. Income data was capped at the upper limit of the survey range to standardize comparisons and avoid outliers affecting the analysis.
+
+- **Sex**: Gender might influence religious affiliation and the intensity of religious practices due to cultural, societal, and personal factors.
+
+- **Education (ISCED)**: The level of education corresponds with various socio-economic factors that can affect religious perspectives and observance. This variable was classified according to the International Standard Classification of Education (ISCED) to maintain consistency with global educational standards.
+
+- **State**: The inclusion of geographic location (states within the USA) could potentially aid us in analyzing regional variations in religious practices, which can be significant due to cultural, and social differences.
+
+- **Reltrad (Religious Tradition)**: This categorizes respondents into different religious traditions as outlined in the survey. Understanding these categories helps in identifying how various traditions differ in socio-economic and demographic contexts.
+
+### Transformations Applied on initial variables:
+
+1. **Income**: Income values were transformed from a range of categorical features made up of characters to numeric continuous features through extracting the numerical upper-limit of each income range. We also carried out data imputation (median) for missing values within the feature
+
+
+2. **Categorization of Education Levels**: Education levels were categorized based on the International Standard Classification of Education (ISCED), which is a statistical classification of education levels for education systems. We adopted this classification to simplify the analysis and highlight significant trends across broad educational categories.
+
+
+4. **Categorization of instances**: Categorized all the respondents that answered Born in US as US Citizens and grouped all other respondents (Born in another country, Born in Puerto Rico, DK/Refused) as Non-US Citizens
+
+
+These transformations and the initial variable selection are aimed at optimizing the clarity, usability, and relevance of the data for analyzing the socio-economic factors influencing religious engagement and belief systems in the U.S. The resulting dataset provides a robust foundation for statistical modeling and hypothesis testing in the subsequent phases of this research.
+
+-   **Data description**: Dataset dimensions {rows, columns}: {35556, 13}
+
+| Variable Name | Variable Label                                          | Variable Scale                     |
+|---------------|---------------------------------------------------------|------------------------------------|
+| X             | Unique sample identifier                                | Categorical                        |
+| int_date      | Interview date                                          | Categorical                        |
+| lang          | Language of interview                                   | Categorical                        |
+| type          | Type of sample                                          | Categorical                        |
+| cregion       | Census region                                           | Categorical                        |
+| state         | State from FIPS                                         | Categorical                        |
+| usr           | Community type – urban/suburban/rural                   | Categorical                        |
+| density3      | Recoded population density                              | Quantitative                       |
+| q1            | Satisfaction with country's direction                   | Binary                             |
+| q1a           | Intensity of satisfaction with country's direction      | Categorical                        |
+| q2            | Satisfaction with personal life                         | Categorical                        |
+| q2a           | Intensity of satisfaction with personal life            | Categorical                        |
+| q3a           | Satisfaction with standard of living                    | Categorical                        |
+| q3b           | Satisfaction with family life                           | Categorical                        |
+| q6            | Preference for government size and service provision    | Categorical                        |
+| q7            | Views on abortion legality                              | Categorical                        |
+| q8            | Interest in government and public affairs               | Categorical                        |
+| q8a           | Influence on views of government and public affairs     | Categorical                        |
+| q9            | Views on church involvement in politics                 | Categorical                        |
+| q10a          | Perceived threat to values from Hollywood and entertainment industry | Categorical                        |
+| q10b          | Belief in clear and absolute standards for right and wrong | Categorical                        |
+| q10c          | View on evolution as the explanation for human origins  | Categorical                        |
+| q10d          | Sources looked to for guidance on right and wrong       | Categorical                        |
+| marital       | Current marital status                                  | Categorical                        |
+| race          | Race                                                    | Categorical                        |
+| reltrad       | Religious tradition                                     | Categorical                        |
+| protfam       | Family's religious tradition within Protestantism       | Categorical                        |
+| q20           | Frequency of attending religious services               | Categorical                        |
+| q21           | Importance of religion in life                         | Categorical                        |
+| q27           | Estimated number of congregation members                | Categorical                        |
+| q29           | Official membership in a church or house of worship     | Categorical                        |
+| q30           | Belief in God or a universal spirit                     | Categorical                        |
+| q41           | Frequency of prayer outside of religious services       | Categorical                        |
+| q42a          | Frequency of participation in religious group activities | Categorical                        |
+| q42b          | Frequency of reading scripture outside of religious services | Categorical                        |
+| q42c          | Frequency of meditation                                 | Categorical                        |
+| q42g          | Frequency of sharing religious views with others        | Categorical                        |
+| q46           | Perception of conflict between devout religiousness and modern society | Categorical                        |
+| q47           | Perception of conflict between non-religiosity and a religious society | Categorical                        |
+| children      | Number of children                                      | Quantitative                       |
+| sex           | Sex                                                     | Categorical                        |
+| age           | Age                                                     | Quantitative                       |
+| q60           | Birthplace of the respondent                            | Categorical                        |
+| q61           | Current U.S. citizenship status of the respondent       | Binary                             |
+| educ          | Education level                                         | Categorical                        |
+| income        | Income level                                            | Quantitative                       |
+| regist        | Voter registration status                               | Categorical                        |
+| party         | Political party affiliation                             | Categorical                        |
+| ideo          | Political ideology                                      | Categorical                        |
+| pvote04a      | 2004 presidential vote                                  | Categorical                        |
+| educ_isced    | International Standard Classification of Education      | Quantitative                       |
+| q1_target     | Target variable for question 1                          | Binary                             |
+
+
+
+
+
+```{r Loading Libraries and Dataset}
+suppressPackageStartupMessages(library(tidyverse)) # For data manipulation and visualization
+suppressPackageStartupMessages(library(forcats)) # For categorical variable management
+suppressPackageStartupMessages(library(lubridate)) # For date and time manipulation
+suppressPackageStartupMessages(library(caret)) # For data splitting and preprocessing
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(haven))
+suppressPackageStartupMessages(library(tibble))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(corrplot))
+suppressPackageStartupMessages(library(reshape2))
+suppressPackageStartupMessages(library(RColorBrewer))
+suppressPackageStartupMessages(library(forcats))
+suppressPackageStartupMessages(library(caret))
+
+```
+
+```{r}
+suppressPackageStartupMessages(library(DHARMa))
+suppressPackageStartupMessages(library(stats))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(ggfortify))
+suppressPackageStartupMessages(library(ggcorrplot))
+suppressPackageStartupMessages(library(skimr))
+suppressPackageStartupMessages(library(naniar))
+suppressPackageStartupMessages(library(lme4))
+suppressPackageStartupMessages(library(performance))
+suppressPackageStartupMessages(library(see))
+suppressPackageStartupMessages(library(GGally))
+suppressPackageStartupMessages(library(randomForest))
+```
+
+
+
+
+## EDA
+```{r dataset, echo=FALSE}
+data <- read.csv("Religion-USA-2007.csv")
+```
+### Data Pre-Processing
+### Dropped Features and Missing Values
+Nezlek (2021) dealt with the missing values by covariates for individual differences in sociodemographic characteristics, such as gender, age, income, education, in the analysis. the author finds that most half of one important variable is missing, so he can not simply drop the samples. Graham and Crown (2014) imputed missing income data by using the midpoint of income brackets provided by respondents and diving it by the PPP ratio to assign respondents to appropriate income quintile or decile categories for their country. 
+
+We considered respondents answering Don’t know/Refused to be the missing value, and converted those answers to be NA, and then dropped the samples containing NA. We also went further to drop columns with a lot of nested features .i.e. a column that other columns depend on heavily. For example, `q31` and `q32` were dropped because they were nested questions, and the general question `q30` already serves the purpose of trying to uncover the amount of people that believe in God or a higher-power.  
+
+These processes are just a brief glimpse into our workflow and rationale during data cleaning, and the initial stages of the project where we were familiarizing ourselves with the dataset.
+
+
+After dropping process, we have 28076 rows left and 46 columns in the dataset for modeling purpose. And the following are the detail of how we dropped the feature due to missing or nested reason. 
+
+
+
+
+
+
+
+
+
+
+
+# E Methods
+Lim and Putnam (2010) used an ordinal logistic regression model to explore how and why religion affects life satisfaction. Graham and Crown (2014) used quantile regressions to examine how the relationship between religion and wellbeing varies at different point of the wellbeing distribution, they also employed ordered logit or logit specifications in their regressions due to the ordinal nature of the explained variables. Nezlek (2021) used a multilevel model to analyze the data, where persons were treated as nested within countries. The data were analyzed with a series of multilevel models using the program hierarchical linear modeling, estimating regression coefficients for each country and mean coefficient. This approach allowed for examining between-country differences in individual-level relationships and testing the statistical significance of these differences. 
+
+
+In our case, where we intend to uncover how important some socio-economic factors affect satisfaction, a binary target, we used a binary logistic regression model to explore these interactions. We explored GLMMs and Random Forest because of the complexity and sheer volume of features with numerous categories within our data. For preliminary analysis we conducted exploratory data analysis (EDA) which was broken down into Univariate and Multivariate analysis. For the univariate analysis, we split it into numeric and categorical variables and plotted suitable graphs for each variable.  For the multivariate analysis we plotted histograms, jitterplots, boxplots to get a visual understanding of how some variables of interest interact with the target feature. We also carried out an Analysis of Variance (ANOVA) for the numeric variables against the binary target to test how well these predictors (like `age, educ_isced, density3, and income`) explain the variance in a continuous dependent variable, by comparing the mean squares between groups (due to the predictor) to the mean squares within groups (error term). For the categorical variables, we utilized the Chi-Squared test to determine whether there's a significant association between two categorical variables by comparing the frequencies observed in the data to the frequencies expected if there were no association. `Party` and `Ideo` are the most critical predictors due to their very high $X^2$ values and low p-values, indicating strong statistical evidence of association with the response variable. These should be prioritized in any model-building or hypothesis-testing efforts. `Sex`, ` Reltrad`, and `Children` also show strong associations and are important but slightly less impactful individually compared to `Party` and `Ideo`. When conducting multiple hypothesis tests, as in the case of multiple Chi-squared tests to examine the association between several categorical variables and an outcome, there is a heightened risk of incurring Type I errors (false positives). Each individual test carries a chance of incorrectly rejecting the null hypothesis (typically at a 5% probability if the significance level $\alpha$ is set to 0.05). When multiple tests are performed, these chances accumulate, increasing the overall risk of at least one Type I error. To control this increased risk, various multiple testing correction methods are employed. Two commonly used methods are the Bonferroni correction and the Holm-Bonferroni method. Both are used to adjust the p-values obtained from the tests, thereby tightening the criteria for declaring significance. For Bonferroni method, it involves setting a more stringent significance level for the individual tests by dividing the overall $\alpha$ by the number of tests being performed ($n$). The adjusted p-value threshold is ($\alpha$ / $n$).  
+
+
+$Adjusted p-value$ = $min (1, Original p-value x $n$)  
+
+
+The Bonferroni correction is straightforward and very conservative, aiming to ensure that the chance of making even one Type I error does not exceed $/alpha/ for all tests combined. 
+
+The Holm-Bonferroni Method is a step-down procedure that sequentially adjusts p-values starting from the smallest. It's less conservative than the Bonferroni method, providing greater power while still controlling the Family-Wise Error Rate (FWER). The p-values are ordered from smallest to largest, and for p-value, compute the adjusted p-value as:  
+
+
+$Adjusted p-value_i$ = min (1, $Original p-value_i$ * $(n – i + 1)), where i is the rank in the ordered list.   
+
+
+The Holm-Bonferroni method adjusts the significance threshold based on the rank of the individual p-value, allowing for some p-values to remain significant even if others are very small, thereby addressing the overly conservative nature of the Bonferroni correction and better maintaining the balance between Type I and Type II errors (false negatives).
+
+By using these corrections, we ensure that the results of your multiple tests are robust against the inflation of Type I error probability, making our findings more reliable and scientifically sound. The choice between Bonferroni and Holm largely depends on the number of tests and the desired balance between error control and statistical power. We prefer Holm's method, because this is generally preferred for larger sets of comparisons due to its less stringent control leading to higher power while still controlling the FWER effectively.
+
+
+For modelling, we fit a logistic regression model using the $glmer()$ function from the lme4 package, suitable for analyzing data with both fixed effects and random effects (Generalized Linear Mixed Model or GLMM). We specified random effects (1|reltrad) and (1|state) which aims to specify that intercepts vary across levels of reltrad (religious tradition) and state (geographical state), respectively. This accounts for cluster-level variability, which is especially important in data with hierarchical or nested structures. Also, the model is fitted using the binomial family and the logit link function, appropriate for binary logistic regression. The control settings via glmerControl use the optimx optimizer with the 'L-BFGS-B' method, which is a robust optimization algorithm suitable for models that are potentially complex or non-linearly separable. The control settings via $`glmerControl`$ use the $`optimx`$ optimizer with the 'L-BFGS-B' method, which is a robust optimization algorithm suitable for models that are potentially complex or non-linearly separable.
+
+
+
+GLMMs often exhibit residuals that do not conform to the normality and homoscedasticity assumptions typical of linear models. This discrepancy arises because these models incorporate link functions and random effects, which can distort the residual structure when viewed through traditional linear model diagnostics. Despite the potential for these issues, residual plots remain a fundamental tool for diagnosing model fit. These plots are used to visually inspect for deviations from model assumptions like independence, constant variance across predictions (homoscedasticity), and the expected distribution of residuals (typically normality in linear models). Checking the distributions and impacts of random effects is crucial. Random effects can influence residual structures, and their distributions can indicate issues like overdispersion, or clustering not accounted for by the fixed effects alone.
+
+
+DHARMa (Diagnostic for HierArchical Regression Models) provides a user-friendly interface and methodology to create standardized residuals from predictions of a GLMM. These residuals are transformed to be uniformly distributed under the correctly specified model scenario, which simplifies the interpretation and identification of model misspecifications. The use of DHARMa in our model is appropriate and beneficial. It addresses the specific challenges posed by the complex structure of GLMMs by providing a straightforward interpretation of residuals that accounts for the intricacies of these models. The simulated residuals help in identifying departures from model assumptions, thus guiding potential model improvements, or confirming the model's adequacy. DHARMa residuals are calculated through a simulation-based approach that creates standardized residuals from fitted models, particularly useful for generalized linear mixed models (GLMMs) and other complex models. The purpose is to transform the residuals to a uniform distribution, facilitating easier and more intuitive diagnostic checks. 
+
+
+An assumption for our model and analysis was the fact that we assumed everyone that was satisfied or dissatisfied with the state of the country (`q1`) would be generally satisfied or dissatisfied within their personal life. Also, our initial variable selections were manual and were solely based off using a "common-sense" approach. For example, we dropped a column that asked about the respondents choice of presidential candidate. We deemed that this was not relevant enough to directly contribute to the satisfaction of the individual.
+
+
+### F Analysis
+
+## Data Pre-processing
+--------------------------------------------------------------------------------
+Due to the nature of our data, we had to undergo very extensive data preprocessing. We encountered alot of missing values and unresponsive respondents that chose not to answer all the questions. These are a few examples of the issues within the dataset. The following are some of the features we had to clean and perform some form of data transformations:
+
+
+
+
+1. **income**: Drop all "Don't know/Refused" entries. Convert income ranges to their upper limit and convert to numeric.
+
+```{r}
+data <- data %>%
+  mutate(income = case_when(
+    income == "Don't know/Refused (VOL.)" ~ NA_character_,
+    income == "$100,000 or more" ~ "175000", # Directly setting "$100,000 or more" to "160000"
+    income == "Less than $10,000" ~ "10000", # Setting "Less than $10,000" to just above "9999" for consistency
+    TRUE ~ as.character(income) # Keeping other incomes as character for further processing
+  )) %>%
+  mutate(income = ifelse(grepl("to under", income), gsub(".*to under \\$?([0-9,]+)", "\\1", income), income)) %>%
+  mutate(income = gsub(",", "", income)) %>% # Remove commas for thousands
+  mutate(income = gsub("\\$", "", income)) %>% # Remove dollar signs
+  # Ensures values that are not purely numeric or previously adjusted cases are set to NA
+  mutate(income = ifelse(grepl("^[0-9]+$", income), income, NA)) %>%
+  mutate(income = as.numeric(income)) # Converts to numeric
+
+
+warnings()
+unique(data$income)
+```
+
+
+
+2. **Age**: Drop entries that are 97 or older and "Don't know/Refused".
+ 
+```{r}
+data <- data %>%
+  filter(age < 97 & age != "Don't know/Refused (VOL.)")
+unique(data$age)
+```
+
+
+3. **q60** 
+
+```{r}
+# Assuming your dataset is named 'data'
+data <- data %>%
+  mutate(q60 = case_when(
+    q60 %in% c("Born in other U.S. territories (Guam, Samoa, Virgin Islands)", "Born in U.S.") ~ "Born in US",
+    q60 %in% c("Born in Puerto Rico (VOL)", "Born in another country") ~ "Born outside US",
+    q60 == "DK/Refused (VOL)" ~ NA_character_, # Assign NA to "Don't know/Refused (VOL.)"
+    TRUE ~ q60 # Keep existing values as they are for any other cases
+  )) %>%
+  # Optionally, you might want to drop rows where q60 became NA due to the above operation
+  filter(!is.na(q60))
+
+# Verify the changes
+#unique(data$q60)
+```
+
+
+4.  **Handle "Don't know/Refused" as NAs and drop NAs across specified columns**
+```{r}
+# Assuming 'data' is your dataset
+data <- data %>%
+  # Step 3: Handle "Don't know/Refused" across specified columns
+  mutate(across(c(q1, q1a, q2, q2a, q3a, q3b, q3c, q3d), 
+                ~ if_else(. == "Don’t know/Refused (VOL.)", NA_character_, .)))
+  # Optional: Drop rows with any NAs in the specified columns if required
+  #drop_na(data$q1, data$q1a, data$q2, data$q2a, data$q3a, data$q3b, data$q3c, data$q3d)
+
+# View the modified dataset
+```
+
+
+5. **Education** Classifying based on ISCED (International Standard Classification of Education)
+```{r}
+# Assuming your dataset is named 'data'
+# And assuming 'educ' column contains the educational attainment descriptions
+data <- data %>%
+  mutate(educ_isced = case_when(
+    educ == "None, or grade 1-8" ~ 1,
+    educ == "High school incomplete (Grades 9-11)" ~ 2,
+    educ == "High school graduate (Grade 12 or GED certificate)" ~ 3,
+    educ == "Technical, trade, or vocational school AFTER high school" ~ 4,
+    educ == "Some college, no 4-year degree (including associate degree)" ~ 5,
+    educ == "College graduate (B.S., B.A., or other 4-year degree)" ~ 6,
+    educ == "Post-graduate training or professional schooling after colle" ~ 7, # or 8, depending on the qualification level achieved
+    educ == "Don't know/Refused (VOL.)" ~ NA_integer_,
+    TRUE ~ NA_integer_  # Assign NA for any unclassified or missing values
+  ))
+
+# View the modified dataset
+unique(data$educ_isced)
+head(data$educ_isced)
+```
+
+
+```{r}
+data <- data %>%
+  mutate(q30 = case_when(
+    q30 == "Don’t know/refused (VOL.)" ~ NA_character_,
+    q30 == "Other (VOL.)" ~ "No",
+    TRUE ~ as.character(q30)
+  ))
+data <- data %>%
+  drop_na(q30)
+
+# Optional: Check the structure and summary of the modified column to ensure changes
+#summary(data$q30)
+# Check the modifications - optional, just to verify
+#unique(data$q30)
+```
+
+```{r}
+data <- data %>%
+  mutate(across(c(children, reltrad, q42b, q42c, q46, regist), 
+                ~ if_else(. == "Don’t know/Refused (VOL.)", NA_character_, .))) %>%
+  drop_na(children, reltrad, q42b, q42c, q46, regist)
+
+```
+
+```{r}
+data <- data %>%
+  mutate(across(c(educ, children, q8, q20, q21, q29, q42a, q42g, q46, q47), ~case_when(
+    . %in% c("Don’t know/refused", "Don’t know/Refused", "Don’t know/refused (VOL)", "Don’t know/Refused (VOL)", "Don’t know/Refused (VOL)", "Don’t know/refused (VOL.)", "Don’t know/Refused (VOL.)", "Other (VOL.)", "DK/Refused (VOL)") ~ NA_character_,
+    TRUE ~ as.character(.)
+  )))
+data <- data %>%
+  drop_na(educ, educ_isced, children, q8, q21, q29, q42a, q42g, q46, q47)
+```
+
+
+
+6. **Convert the "density3" column to numeric values**
+```{r}
+data <- data %>%
+  mutate(density3 = case_when(
+    density3 == "" ~ "Lowest", # Convert blank strings to "Lowest"
+    density3 == "Lowest" ~ "1",
+    density3 == "Highest" ~ "5",
+    TRUE ~ as.character(density3) # Keep numeric values as is but ensure they're character for uniformity
+  )) %>%
+  mutate(density3 = as.numeric(density3)) # Convert the updated density3 column to numeric
+data <- data %>%
+  drop_na(density3)
+# View the changes
+head(data$density3)
+
+unique(data$density3)
+```
+
+
+```{r}
+# Calculate the number of null values in each column
+null_counts <- sapply(data, function(x) sum(is.na(x)))
+
+# Sort the null counts in descending order
+sorted_null_counts <- sort(null_counts, decreasing = TRUE)
+
+# Find the columns with the most null values
+most_null_columns <- names(sorted_null_counts)[1:5]  # Adjust the number if you want more or fewer columns
+
+# Print the columns with the most null values
+print(most_null_columns)
+
+```
+
+
+
+7. **Categorize the "q60" citizenship column into Born in US and Born Outside the US**
+```{r}
+data <- data %>%
+  mutate(q61 = case_when(
+    q60 == "Born outside US" & q61 == "" ~ "No",  # If q60 is "Born outside US" and q61 is blank, fill with "No"
+    q60 == "Born in US" & q61 == "" ~ "Yes", 
+    q61 == "Don’t know/Refused" ~ NA_character_,
+    TRUE ~ q61
+  ))
+data <- data %>%
+  drop_na(q61)
+
+# Display the modified dataset to verify the changes
+unique(data$q61)
+
+```
+
+
+8. **Transform the children column**
+```{r}
+# Ensure the 'children' column exists
+if("children" %in% colnames(data)) {
+  # Replace the specific string with "0"
+  data$children[data$children == "No, not the parent or guardian of any children under 18 livi"] <- "0"
+  
+  # Convert numeric values to factors, merging values greater than 6 into a ">6" category
+  # First, ensure that the 'children' column is numeric, which might require conversion from factor or character
+  data$children <- as.numeric(as.character(data$children))
+  # Handle conversion issues, such as NAs introduced by coercion, if they arise
+  data$children[is.na(data$children)] <- 0 # Assuming you want to treat NA as "0"
+  
+  # Now, create a new column for modified children count
+  data$children <- ifelse(data$children > 6, ">6", as.character(data$children))
+  
+  # Count occurrences of each class in the modified 'children' column
+  children_counts_modified <- table(data$children)
+  
+  # Print the counts
+  print(children_counts_modified)
+} else {
+  print("Column 'children' does not exist in the dataset.")
+}
+```
+
+
+
+9. **Create a "Faith" column based on respondents responses on their religiosity**
+```{r}
+data <- data %>%
+  mutate(faith = ifelse(is.na(q46) | q46 == "", "Non-Believer", "Believer"))
+
+# Display the first few rows to verify the new column
+head(data)
+unique(data$faith)
+
+```
+
+
+10. **Performed Data Imputation on the Income column for missing values**
+```{r}
+# Calculate the median income excluding NA values
+median_income <- median(data$income, na.rm = TRUE)
+
+# Impute median values for NA values in the income column
+data <- data %>%
+  mutate(income = ifelse(is.na(income), median_income, income))
+
+# View the changes
+head(data)
+```
+
+
+## Preliminary Variable Selection
+```{r}
+# Assuming your data is in a dataframe called 'data'
+# Define the columns you want to drop
+columns_to_drop <- c("psraid", "weight", "usr1", "form", "hisp", "chr", "denom", "family", "q3c", "q3d", "q5a", "q5b", "q5c", "q5d", "q5e", "q5f", "q5g", "q16", "q17", "q17a", "q17b", "q17c", "q17d", "q17e", "q17f", "q17g", "q17h", "q17i", 
+                     "q17j", "q17k", "q17l", "q17m", "q17n", "q17o", "q17p", "q17q", "q17r", 
+                     "q17s", "q17t", "q17u", "q17v", "q18","q19a", "q19b", "q28a", "q28b", "q28c", "q28d", "q31", "family",
+                     "q32", "q33", "q34", "q34a", "q34b", "q34c", "q34d", "q35", "q36", "q37", "q38", "q39a", 
+                     "q39b", "q39c", "q40a", "q40b", "q40c", "q42d", "q42e", "q42f", "q43a", "q43b", "q43c", "q43d", "q50", "q50a", "q50b",
+                     "q51", "q52", "q53", "q55a", "q55b", "q55c", "q63", "regicert", "partyln", "pvote04b")
+
+# Drop these columns from the dataframe
+data <- select(data, -all_of(columns_to_drop))
+
+# Print out all remaining column names
+print(colnames(data))
+```
+
+
+```{r}
+number_of_remaining_columns <- length(names(data))
+print(paste("Number of remaining columns:", number_of_remaining_columns))
+```
+
+
+
+### Part 1: Data Quality Summary
+```{r}
+# Part 1: Data Quality Summary
+# Generate a summary of missing data
+missing_summary <- data %>% 
+  select(X, int_date, lang,
+type, cregion, state, usr,
+density3, q1, q2, q3a, q3b,
+q6, q7, q8, q8a, q9,
+q10a, q10b, q10c, q10d, marital, race, reltrad, protfam, q20, q21, q27, q29,
+q30, q41,
+q42a, q42b, q42c, q42g, q46,
+q47, children, sex, age, 
+q60, q61, educ, income, regist,
+party, ideo, pvote04a, educ_isced) %>%
+  n_miss()
+
+# View the missing data summary
+print(missing_summary)
+```
+
+
+
+### Part 2: Data Quality Summary
+```{r}
+# Step 1: Identify categorical and continuous columns
+categorical_columns <- sapply(data, is.factor) | sapply(data, is.character)
+continuous_columns <- sapply(data, is.numeric)
+
+# Step 2: Split the dataset
+data_categorical <- data[ , categorical_columns]
+data_continuous <- data[ , continuous_columns]
+
+# Initialize dataframes for quality reports
+report_categorical <- tibble(Column_Name = character(), Total_Missing = integer(), Percent_Missing = numeric(), Unique_Values = integer(), Examples = list())
+report_continuous <- tibble(Column_Name = character(), Total_Missing = integer(), Percent_Missing = numeric(), Median = numeric(), Std_Dev = numeric(), Min = numeric(), Max = numeric(), Outliers = list())
+
+# Populate reports for categorical data
+for (col_name in names(data_categorical)) {
+  total_missing <- sum(is.na(data_categorical[[col_name]]))
+  percent_missing <- (total_missing / nrow(data_categorical)) * 100
+  unique_values <- length(unique(data_categorical[[col_name]]))
+  examples <- if (unique_values > 0) {
+    unique_vals <- unique(na.omit(data_categorical[[col_name]]))
+    sample_size <- min(length(unique_vals), 5) # Ensure sample size doesn't exceed available unique values
+    sample(unique_vals, size = sample_size, replace = FALSE)
+  } else {
+    NA # Or appropriate handling for columns with no unique non-NA values
+  }
+  report_categorical <- bind_rows(report_categorical, tibble(
+    Column_Name = col_name,
+    Total_Missing = total_missing,
+    Percent_Missing = percent_missing,
+    Unique_Values = unique_values,
+    Examples = list(examples)
+  ))
+}
+
+# Populate reports for continuous data
+columnQualityReport <- function(column, columnName) {
+  # Initializing variables for numeric columns
+  missing <- sum(is.na(column))
+  unique_values <- length(unique(column))
+  
+  if (is.numeric(column)) {
+    # Calculations for numeric columns
+    mean_value <- round(mean(column, na.rm = TRUE), 2)
+    median_value <- round(median(column, na.rm = TRUE), 2)
+    std_dev <- round(sd(column, na.rm = TRUE), 2)
+    min_value <- round(min(column, na.rm = TRUE), 2)
+    max_value <- round(max(column, na.rm = TRUE), 2)
+    upper_limit <- quantile(column, 0.75, na.rm = TRUE) + 1.5 * IQR(column, na.rm = TRUE)
+    lower_limit <- quantile(column, 0.25, na.rm = TRUE) - 1.5 * IQR(column, na.rm = TRUE)
+    outliers_count <- sum(column < lower_limit | column > upper_limit, na.rm = TRUE)
+    
+    
+    # Creating a tibble directly with all stats
+    stats_df <- tibble(
+      Column = columnName,
+      Missing = missing,
+      Unique_Values = unique_values,
+      Mean = mean_value,
+      Median = median_value,
+      Std_Dev = std_dev,
+      Min = min_value,
+      Max = max_value,
+      Outliers = outliers_count
+    )
+  } else {
+    # For non-numeric columns, include only basic stats
+    stats_df <- tibble(
+      Column = columnName,
+      Missing = missing,
+      Unique_Values = unique_values,
+      Mean = NA_real_,
+      Median = NA_real_,
+      Std_Dev = NA_real_,
+      Min = NA_real_,
+      Max = NA_real_,
+      Outliers = NA_integer_
+    )
+  }
+  
+  return(stats_df)
+}
+
+# Apply the function to each column and bind rows into a single dataframe
+report_df <- bind_rows(lapply(names(data), function(colName) columnQualityReport(data[[colName]], colName)))
+
+# Pivoting is no longer necessary as each row represents a column's stats
+print(report_df)
+
+# View the reports
+print(report_categorical)
+```
+
+
+
+
+
+## Data Visualization 
+We some trouble visualizing the various religions `q16`, `reltrad`, `protfam`, represented in the survey, as they were alot and seemed to overwhelm every visualization plot I tried to create. I tried barplots, mosaic plots, and heatmaps but none seemed to work. Considering this, I decided to drop the column in favour of `RELTRAD` as this column seeks to represent `q16` variables within a limited set of broad categories.
+
+
+```{r}
+cat_vars <- c("sex", "party", "usr", "q60", "q61", "reltrad", "marital", 
+              "q30", "ideo", "race", "q20", "q21", "q41", "children", 
+              "regist", "pvote04a", "q1", "q2", "q3a", "q3b")
+# Plotting bar graphs for each categorical variable
+for (var in cat_vars) {
+  plot <- ggplot(data, aes_string(x = var)) +
+    geom_bar(fill = "cornflowerblue", color = "black") +
+    theme_minimal() +
+    labs(title = paste("Distribution of", var), x = var, y = "Count") +
+    theme(axis.text.x = element_text(angle = 10, hjust = 1)) # Rotate x labels for readability
+  
+  print(plot)
+}
+```
+
+
+
+### Numeric Data Visualization
+```{r}
+# Identifying all numeric columns in the dataset
+numeric_cols <- sapply(data, is.numeric)
+numeric_col_names <- names(numeric_cols[numeric_cols])
+numeric_col_names <- c(numeric_col_names, "age", "density3")
+# Iterate over numeric variables to plot histograms and boxplots
+for (col_name in numeric_col_names) {
+    # Check if the column is numeric, if not, attempt to convert
+    if (!is.numeric(data[[col_name]])) {
+    warning(paste(col_name, "is not numeric. Attempting conversion."))
+    data[[col_name]] <- as.numeric(as.character(data[[col_name]]))
+  }
+
+  # Histogram
+  histogram_plot <- ggplot(data, aes_string(x = col_name)) +
+    geom_histogram(bins = 30, fill = "cornflowerblue", color = "black") +
+    theme_minimal() +
+    labs(title = paste("Histogram of", col_name), x = col_name, y = "Count")
+  print(histogram_plot)
+  
+  # Boxplot adjusted as per the request
+  boxplot_plot <- ggplot(data, aes(y = .data[[col_name]], x = factor(1))) +  # Using factor(1) for univariate boxplot
+    geom_boxplot() +
+    theme(axis.text.x = element_text(size = 13),
+          axis.text.y = element_text(size = 13),
+          axis.title.x = element_text(size = 13),
+          axis.title.y = element_text(size = 13)) +
+    labs(title = paste("Boxplot of", col_name), x = "", y = col_name)
+  print(boxplot_plot)
+}
+```
+
+
+
+
+### Correlation Matrix 
+```{r}
+if (!requireNamespace("corrplot", quietly = TRUE)) install.packages("corrplot")
+ # For melting the correlation matrix
+
+numeric_cols <- sapply(data, is.numeric)
+numeric_col_names <- names(numeric_cols[numeric_cols])
+
+#numeric_col_names <- c(numeric_col_names, "age", "density3")
+# Compute the correlation matrix
+cor_matrix <- cor(data[numeric_col_names], use = "complete.obs")  # Handling missing values by excluding them
+corrplot(cor_matrix, method = "circle", type = "upper", order = "hclust",
+     tl.col = "black", tl.srt = 10, addCoef.col = "black")
+
+# Using ggplot2 for a heatmap:
+# Melt the correlation matrix for ggplot
+melted_cor_matrix <- melt(cor_matrix)
+
+# Plot
+ggplot(melted_cor_matrix, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 10, vjust = 1, hjust=1)) +
+  labs(x = '', y = '')
+
+ggcorrplot(cor_matrix, hc.order = TRUE,
+           type = "lower", lab = TRUE, lab_size = 2.5,
+           ggtheme = ggplot2::theme_gray,
+           colors = c("#00bfa6", "white", "#f8768f"))
+
+```
+
+
+`**Conclusion: ** 
+High positive correlation (close to 1) indicates that as one variable increases, the other variable also increases.  
+High negative correlation (close to -1) indicates that as one variable increases, the other variable decreases.  
+Low or zero correlation (close to 0) suggests no linear relationship between the variables.  
+Here, the only variables of real interest are `age`, `income` and `educ_isced` (`density3` could also be looked at, it is the population density of various regions) (education level based on the ISCED Statistical level). It can be seen that there seems to be a high/moderate positie correlation between education level and income. As `educ_isced` increases, so does income. It could be inferred that a getting advanced degrees positively increases your income, which can also be seen in real world scenarios where Masters, PhD graduates earn comparatively more than High-School and BSc. holders.  
+Also, there seemed to be negative correlations between age and income, education level. Based on this matrix alone, without conducting further analysis, it may seem that as respondents age, their income reduces and older people tend to have lesser education levels. 
+
+
+
+
+
+##  Multivariate Analysis.  
+For the target we chose `q1` as it encompasses a general satisfaction amongst respondents. It contains a binary class (Satisfied, Dissatisfied) and this makes it easier to model as a target compared to multi-class variables like `q3`. Also, the class distribution between Satisfied and Dissatisfied seems to be well distributed which will save us the trouble of conducting SMOTE (Synthetic Minority Oversampling Technique) or under sampling majority classes.  
+For Multi-Variate Analysis we would carry out a few tasks such as: Chi-Squared Tests for select variables, visualize various variables against the target, and visualize density of various classes with the balloon plot.  
+
+
+First we encode `q1` into b binary class of 0 and 1. 
+```{r}
+data <- data %>%
+  mutate(q1_target = case_when(
+    q1 %in% c("Dissatisfied") ~ 0,   # Assuming "Dissatisfied" is the term used; adjust if necessary
+    q1 %in% c("Satisfied") ~ 1,      # Assuming "Satisfied" is the term used; adjust if necessary
+    TRUE ~ NA_integer_               # Assign NA for any other cases or adjust as needed
+  ))
+
+```
+
+
+```{r}
+for (col_name in numeric_col_names) {
+  
+  # Jitterplot
+  jitter_plot <- ggplot(data, aes(x = .data[[col_name]], y = .data$q1_target, color = .data[[col_name]])) +
+    geom_jitter(width = 0.2) +
+    labs(title = paste(col_name, "vs Satisfaction Levels")) +
+    theme(axis.text.x = element_text(size = 15),
+          axis.text.y = element_text(size = 15),
+          axis.title.x = element_text(size = 15),
+          axis.title.y = element_text(size = 15))
+
+
+  # Arrange plots
+  grid.arrange(jitter_plot, ncol = 1)
+}
+```
+
+
+
+
+
+```{r}
+# Ensures that q1_target is treated as a factor since it's the binomial target
+data$q1_target <- as.factor(data$q1_target)
+
+for (col_name in numeric_col_names) {
+  # Generate and print the plot
+  box_plot <- ggplot(data, aes(x = .data$q1_target, y = .data[[col_name]])) +
+    geom_boxplot() +
+    labs(x = "Binomial Target", y = col_name, title = paste("Box Plot of", col_name, "by Binomial Target")) +
+    theme_minimal()
+  
+  grid.arrange(box_plot)
+}
+
+```
+
+
+```{r}
+# Ensures that q1_target is treated as a factor 
+data$q1_target <- as.factor(data$q1_target)
+
+for (col_name in numeric_col_names) {
+  # Generate and print the histogram plot
+  histogram_plot <- ggplot(data, aes(x = .data[[col_name]], fill = .data$q1_target)) +
+    geom_histogram(binwidth = 1, position = "dodge") +
+    facet_grid(. ~ .data$q1_target) +
+    labs(x = col_name, y = "Count", title = paste("Histogram of", col_name, "by Binomial Target")) +
+    theme_minimal()
+  
+  print(histogram_plot)
+}
+```
+
+
+### Statistical Tests
+**Analysis for Continuous features against my Binomial target: ANOVA**  
+```{r}
+anova_results <- list()
+
+for (col_name in numeric_col_names) {
+  # Create the formula string for the ANOVA test
+  formula <- as.formula(paste(col_name, "~ q1_target"))
+  
+  # Perform ANOVA
+  anova_test <- aov(formula, data = data)
+  
+  # Extract the summary of the ANOVA
+  summary_anova <- summary(anova_test)
+  
+  # Store the results in a list
+  anova_results[[col_name]] <- summary_anova
+}
+
+# Display the ANOVA results for one of the variables, for example, 'age'
+# Iterate through the list of ANOVA results and print the summary for each variable
+for (var_name in names(anova_results)) {
+  cat("ANOVA for", var_name, ":\n")
+  print(anova_results[[var_name]])
+  cat("\n")
+}
+
+
+```
+
+
+###Analysis for Categorical features against my Binomial target: Chi-Squared Test
+
+
+```{r}
+cat_vars <- c("sex", "party", "usr", "q60", "q61", "reltrad", "marital", 
+              "q30", "ideo", "race", "state", "cregion", "q20", "q21", "q41", "children", 
+              "regist", "pvote04a", "faith")
+```
+
+
+```{r}
+# Verify that all specified variables exist in the dataframe
+for (var in cat_vars) {
+  cat("Variable:", var, "Length:", length(data[[var]]), "q1_target Length:", length(data$q1_target), "\n")
+}
+
+```
+
+
+***Chi-Squared Test***
+```{r}
+chi_squared_results <- list()
+
+for (var in cat_vars) {
+  # Create a contingency table
+  contingency_table <- table(data[[var]], data$q1_target)
+  
+  # Perform the chi-squared test
+  test_result <- chisq.test(contingency_table)
+  
+  # Store the result in a list
+  chi_squared_results[[var]] <- test_result
+}
+
+# Now, chi_squared_results contains all of the chi-squared test results
+# To print them out, you can loop through the results list
+for (var_name in names(chi_squared_results)) {
+  cat("Chi-squared test for", var_name, ":\n")
+  print(chi_squared_results[[var_name]])
+  cat("\n")
+}
+
+```
+
+
+***Carrying out multiple testing to control for the increased risk of Type I errors: ***
+```{r}
+p_values <- c(2.2e-16, 2.2e-16, 0.001093, 2.2e-16, 2.2e-16, 2.2e-16, 2.2e-16, 2.022e-06, 2.2e-16, 2.2e-16, 2.2e-16, 6.883e-11, 2.2e-16, 9.876e-09, 8.345e-10, 2.2e-16, 2.2e-16, 2.2e-16, 6.321e-09)
+
+# Bonferroni Correction
+adjusted_p_values_bonferroni <- p.adjust(p_values, method = "bonferroni")
+
+# Holm-Bonferroni Method
+adjusted_p_values_holm <- p.adjust(p_values, method = "holm")
+
+#Data frame to organize the results
+results_df <- data.frame(
+  Variable = cat_vars,
+  Original_P_Value = p_values,
+  Bonferroni_Adjusted_P_Value = adjusted_p_values_bonferroni,
+  Holm_Adjusted_P_Value = adjusted_p_values_holm
+)
+
+# Print the results
+print(results_df)
+```
+
+```{r, fig.width=6, fig.height=6}
+
+# Assuming 'data' is your dataset and it includes 'q1_ordered' as an ordered factor
+# 'cat_vars' list of categorical variables
+cat_vars <- c("sex", "party", "cregion", "faith", "q60", "q61", "race", "reltrad", "marital", 
+              "q30", "ideo", "usr", "q20", "q21", "q41", "children", 
+              "regist", "pvote04a")
+
+# Initialize an empty list to store plots
+plot_list <- list()
+
+# Loop through each categorical variable to create and store the plot
+for(cat_var in cat_vars) {
+  # Create a temporary data frame for counts
+  temp_data <- data %>%
+    count(!!sym(cat_var), q1_target) %>%
+    mutate(freq = n) # 'n' is created by count() and represents frequency
+  
+  # Create the balloon plot
+  balloon <- ggplot(temp_data, aes_string(x = cat_var, y = "q1_target", size = "freq")) +
+    geom_point(alpha = 0.6) +
+    scale_size_continuous(range = c(3, 12)) + # Adjust the size range as needed
+    labs(title = paste(cat_var, "vs. target"), 
+         x = cat_var, 
+         y = "q1_target") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x labels for readability
+  
+  # Store the plot in the list
+  plot_list[[cat_var]] <- balloon
+}
+
+# Print the plots (example with the first 4 plots due to space limitation)
+do.call(grid.arrange, c(plot_list[1:4], ncol = 2))
+
+```
+
+
+### RQ1  
+**Research Question 1: ** How does Socio-Economic Factors Impact an individual's religious belief(believer/non-believer)  
+For our RQ1 we intend to answer it through our EDA. We intend to visualize how the socio-economic factors that we have pre-processed, transformed, and chosen impact respondents religious belief(believer/non-believer)  
+
+```{r}
+# Prepare data by converting factors and checking levels (if necessary)
+data$faith <- factor(data$faith)
+data$sex <- factor(data$sex, levels = c("Male", "Female"))
+
+# Customize color palette
+faith_colors <- brewer.pal(nlevels(data$faith), "Paired")
+
+### Plot 1: Faith vs. Age
+ggplot(data, aes(x = fct_infreq(faith), y = age, fill = fct_infreq(faith))) +
+  geom_boxplot(outlier.shape = NA) +  # Hide outliers
+  geom_jitter(width = 0.1, alpha = 0.2, color = "gray", size = 0.5) +
+  scale_fill_manual(values = faith_colors) +
+  labs(title = "Distribution of Age by Faith",
+       x = "Faith (sorted by frequency)",
+       y = "Age") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
+
+### Plot 2: Faith vs. Income
+ggplot(data, aes(x = fct_infreq(faith), y = income, fill = fct_infreq(faith))) +
+  geom_boxplot(outlier.shape = NA) +  # Hide outliers
+  geom_jitter(width = 0.1, alpha = 0.2, color = "gray", size = 0.5) +
+  scale_fill_manual(values = faith_colors) +
+  labs(title = "Distribution of Income by Faith",
+       x = "Faith (sorted by frequency)",
+       y = "Income") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
+
+### Plot 3: Faith vs. Educ_isced
+ggplot(data, aes(x = fct_infreq(faith), y = educ_isced, fill = fct_infreq(faith))) +
+  geom_boxplot(outlier.shape = NA) +  # Hide outliers
+  geom_jitter(width = 0.1, alpha = 0.2, color = "gray", size = 0.5) +
+  scale_fill_manual(values = faith_colors) +
+  labs(title = "Distribution of Educational Level (ISCED) by Faith",
+       x = "Faith (sorted by frequency)",
+       y = "Educational Level (ISCED)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
+
+### Plot 4: Faith vs. Sex
+ggplot(data, aes(x = fct_infreq(faith), fill = sex)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Pastel1") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(title = "Proportion of Sex by Faith",
+       x = "Faith (sorted by frequency)",
+       y = "Percentage (Sex)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5),
+        legend.title = element_blank())
+
+
+```
+
+
+```{r, fig.width=20, fig.height=15}
+# Ensure correct factor levels (if necessary)
+data$faith <- factor(data$faith)
+data$sex <- factor(data$sex, levels = c("Male", "Female"))
+
+
+custom_ggpairs <- function(data, columns) {
+  ggpairs(data, columns = columns,
+          title = "Pair Plot for Selected Variables",
+          upper = list(
+            continuous = wrap("cor", size = 1),
+            combo = wrap("box_no_facet", size =1),
+            discrete = wrap("count", size = 1)
+          ),
+          lower = list(
+            continuous = wrap("points", alpha = 0.5, color = "blue"),
+            combo = wrap("facethist", binwidth = 1),
+            discrete = wrap("facetbar", mapping = aes(fill = ..count..), params = list(position = "fill"))
+          ),
+          diag = list(
+            continuous = wrap("densityDiag", fill = "darkblue"),
+            discrete = wrap("barDiag", fill = "darkblue")
+          ),
+          axisLabels = "show",
+          columnLabels = names(data[columns]),
+          labeller = label_both,
+          showStrips = TRUE
+  )
+}
+
+# Specify columns to include in the pair plot
+columns <- c("faith", "age", "income", "educ_isced", "sex")
+p_ <- GGally::print_if_interactive
+# Create and print the pair plot
+pair_plot <- custom_ggpairs(data, columns)
+print(pair_plot)
+```
+
+
+**Conclusion: **
+We make a few inferences from the visualizations:
+1. Based on the box plot, the average age for non-believers seems to be lower, which can translate to - non-believers being younger than believers. As both box plots for believers and non-believers seem to differ, and it suggests that the central tendency of the ages differs between believers and non-believers. Also, suggests that age is an important feature when analyzing the relationship with the faith (believer vs. non-believer) binary feature
+2. The proportion of Male to Female non believers seems to be unbalanced, as Males are the predominant class within non believers and Females are observed more within believers.
+
+
+
+
+--------------------------------------------------------------------------------
+# Modelling
+--------------------------------------------------------------------------------
+Given the nature of our target variable (binomial) and the presence of both numerical and categorical predictors, a Generalized Linear Model (GLM) with a logistic link function (Logistic Regression) seems to be a suitable choice. This model handles the binomial outcome effectively by estimating probabilities that the outcome falls into one of two categories, based on the predictors.
+
+**We check whether all the categorical variables are present within Data Frame**
+```{r}
+# List of categorical variables
+cat_vars <- c("lang", "cregion", "q8", "q8a", "q9", "sex", "party", "usr", "q10a", "q10b", "q10c", "q10d", "q60", "q61", "reltrad", "marital", 
+              "q30", "ideo", "race", "q20", "q21", "q41", "q29", "children", "state",
+            "regist", "pvote04a", "q27", "protfam", "q42a", "q42b", "q42c", "q6", "q7", "educ", "faith" )
+
+
+missing_vars <- setdiff(cat_vars, names(data))
+
+# Print out missing variables, if any
+if (length(missing_vars) > 0) {
+  cat("The following variables are not in your dataframe and will be skipped:\n")
+  print(missing_vars)
+} else {
+  cat("All variables found in the dataframe.\n")
+}
+
+for (var in cat_vars) {
+  if (var %in% names(data)) {
+    data[[var]] <- as.factor(data[[var]])
+  }
+}
+```
+
+
+### GLMM model
+```{r}
+# List of numerical variables
+num_vars <- c("age", "educ_isced", "density3", "income")
+
+# Standardize numerical variables
+data[num_vars] <- scale(data[num_vars])
+
+data$q1_target <- as.factor(data$q1_target)
+
+# Fit the logistic regression model
+logistic_model <- glmer(q1_target ~ age + educ_isced + density3 + income +
+                        + lang + cregion + q8 + q9 + sex + party + usr + q10a  + q10d + q60 + q61 + marital + q30 + ideo + race + q21 + q41 
+                        + q29 + children + pvote04a + q27 + q42a  
+                        + q42c + q6 + q7 + (1 | reltrad) + (1 | state), data = data, family = binomial(link = "logit"), control = glmerControl(optimizer = "optimx",optCtrl = list(method = 'L-BFGS-B')))
+
+# Summary of the model to see coefficients and significance
+summary(logistic_model)
+```
+
+
+
+
+**Check the residuals using a QQ Plot**
+```{r}
+# Calculating residuals
+residuals <- residuals(logistic_model)
+
+# Calculating fitted values
+fitted_values <- fitted(logistic_model)
+
+# Basic Residual Plot
+ggplot() +
+  geom_point(aes(x = fitted_values, y = residuals)) +
+  labs(x = "Fitted Values", y = "Residuals") +
+  ggtitle("Residual vs. Fitted Plot")
+
+# QQ plot of residuals
+qqnorm(residuals)
+qqline(residuals)
+
+```
+
+**Conclusions**
+
+We used a QQ Plot to try to visualize residuals but the results are almost always uninterpretable because of our binary target varibles.
+
+
+```{r, fig.width=10, fig.height=5}
+library(DHARMa)
+
+# Create simulated residuals
+simulated_residuals_model <- simulateResiduals(fittedModel = logistic_model, n=500)
+
+# Plotting the simulated residuals
+plot(simulated_residuals_model)
+
+```
+
+
+
+## Random Forest  
+```{r}
+set.seed(123) # Ensure reproducibility
+
+# First, create a subset of your data excluding the specified columns
+data_subset <- data[, !(names(data) %in% c("q1_target", "q1","q1a","q2", "q2a", "q3a", "q3b"))]
+
+# Create indices for the training set, using q1_target for stratification
+trainIndex <- createDataPartition(data$q1_target, p = .8, list = FALSE, times = 1)
+
+# Split the data into training and testing sets using the subsetted data
+trainData <- data_subset[ trainIndex,]
+testData  <- data_subset[-trainIndex,]
+
+# Also, split the q1_target accordingly to have it available for model training and evaluation
+trainTarget <- data$q1_target[trainIndex]
+testTarget <- data$q1_target[-trainIndex]
+
+
+```
+
+
+```{r}
+trainTarget_factor <- as.factor(trainTarget)
+# Identify rows with no missing data in both predictors and target
+complete_cases <- complete.cases(trainData, trainTarget_factor)
+
+# Subset the data to keep only complete cases
+trainData_clean <- trainData[complete_cases, ]
+trainTarget_factor_clean <- trainTarget_factor[complete_cases]
+
+# Fit the Random Forest model using the cleaned data
+rf_model <- randomForest(x = trainData_clean, y = trainTarget_factor_clean, ntree = 500)
+
+# View the model summary
+print(rf_model)
+
+```
+
+```{r}
+library(pROC)
+probabilities <- predict(rf_model, newdata = testData, type = "prob")[,2]  # Probabilities for class '1'
+
+# Ensure testTarget is treated as a factor if it's not already, for compatibility with pROC functions
+testTarget_factor <- as.factor(testTarget)
+
+# Compute ROC curve and AUC
+roc_result <- roc(response = testTarget_factor, predictor = probabilities)
+
+# Plot the ROC curve
+plot(roc_result, main = "ROC Curve")
+
+# Calculate and print AUC
+auc_value <- auc(roc_result)
+print(auc_value)
+```
+
+```{r}
+predictions <- predict(rf_model, newdata = testData)
+
+# The predict() function returns factors; for a confusion matrix, ensure testTarget is a factor
+testTarget_factor <- as.factor(testTarget)
+```
+
+
+
+**Variable Importance using Random Forest**
+```{r, fig.width=10, fig.height=8}
+# Plot variable importance
+varImpPlot(rf_model)
+```
+
+## Feature Selection using Boruta
+```{r}
+library(Boruta)
+
+# Combine 'trainTarget' with 'trainData' for Boruta analysis
+# Ensure 'trainTarget' is a factor and properly named
+trainData_full <- cbind(q1_target = as.factor(trainTarget), trainData)
+
+# Perform Boruta feature selection
+# Note: If Boruta throws an error due to factor levels in the target, ensure levels are correctly specified
+boruta_output <- Boruta(q1_target ~ ., data = trainData_full, doTrace = 2)
+
+# Print the results
+print(boruta_output)
+
+# Plot feature importance
+plot(boruta_output, cex.axis = .7, las = 2, xlab = "", main = "Variable Importance")
+
+# Get confirmed and tentative variables
+selected_vars <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(selected_vars)
+
+```
+
+```{r}
+print(boruta_output)
+```
+
+
+***Conclusion: ***
+We utilized Boruta for feature selection. It is a feature selection algorithm specifically designed to find all relevant features and works well with Random Forest. It offers a thorough approach to feature selection, identifying all features that appear to be relevant to the target variable.
+From the Boruta's variable importance plot, we can see that the **Top features** that could potentially affect respondents satisfaction are socio-economic factors like (`age, sex, education`) and surprisingly it seems political views and affliations also play a role in satisfaction. Top variables were (`party, political ideology`)
+
+
+## varImpPlot
+```{r, fig.width=12, fig.height=15}
+varImpPlot(rf_model)
+```
+
+***Conclusion:  ***
+We noticed that there were was a random effect (`state`) that exhibited low variance during our GLMM analysis, but for our feature selection on the Random Forest model it was the first/most favourable feature chosen by the model which signifies a false-positive. A potential reason for this would be that when features have more categories, they are likely to help in splitting data into purer subsets (which can cause overfitting) and will result in high perceived importance of a given feature. This `state` feature has 49 categories and is the feature having the most categories within the dataset.
+
+
+
+
+### G. Results
+
+## GLMMs  Research Question 2
+
+```{r}
+summary(logistic_model)
+```
+### GLMM Interpretation of Coefficients as Log Odds
+Log Odds (or the logit of the probability) is the logarithm of the odds of the dependent variable being a 'success'. The equation for logistic regression can be expressed in terms of log odds as follows:
+$\text{log}(\frac{p}{1-p}) = \beta_0 + \beta_1 \cdot \text X_1 + \beta_2 \cdot \text X_2 + \beta_3 \cdot \text X_3 + \beta_4 \cdot \text X_4 + \beta_5 \cdot \text X_5$
+
+
+$\text X_1$, $\text X_2$, $\text X_3$,$\text X_4$ are the independent variables (e.g., age, income).
+$p$ - is the probability.  
+$\text{log}(\frac{p}{1-p})$ - is the log-odds (logit).   
+
+$\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \beta_5$ - are the coefficients of the model that need to be estimated.  
+
+Coefficients in logistic regression represent the change in the log odds of the dependent variable being a 'success' for a one-unit change in the predictor, holding all other predictors constant. We can interpret some of our model's coefficients as:  
+The exponential of the coefficients (${e}^\beta$) gives us the odds ratios (ORs). An odds ratio greater than 1 indicates an increase in the odds of the dependent variable being '1' for every one-unit increase in the predictor, and an odds ratio less than 1 indicates a decrease.
+
+1. Age (`age`):  
+
+
+Log-odds of Coefficient: -0.350212  
+
+
+Odds Ratio (OR): ${e}^-0.350212$ = 0.704
+
+
+**Interpretation: ** Holding other factors constant, a one-year increase in age decreases the log odds of being satisfied by 29.6% (since 1 − 0.704 = 0.296).  
+This suggests older individuals are less likely to be satisfied, assuming other factors are constant.
+
+
+2. Income (`income`):  
+
+
+**Log Odds (Coefficient): ** 0.054063  
+
+
+**Odds Ratio (OR):  ** ${e}^.054063$ = 1.055
+
+
+**Interpretation: ** For each unit increase in income, the odds of being a satisfied increase by 5.5%.
+
+
+3. Education (`educ_isced`):
+
+
+**Log Odds (Coefficient): ** 0.129714
+
+
+**Odds Ratio (OR):  ** ${e}^0.129714$ = 1.138
+
+
+**Interpretation: ** Each additional educational level increases the odds of being satisfied by 13.8%.
+
+
+4. Sex - Female (`sexFemale`):
+
+
+**Log Odds (Coefficient): ** -0.424881
+
+
+**Odds Ratio (OR): **  ${e}^-0.424881$ = 0.654
+
+Interpretation: Females have 34.6% lower odds of being a satisfied compared to males.
+
+
+
+
+### Model Results
+Binomial family GLMMs with a logit link were fit with the  binary responses for satisfaction. For mixed effects models there were twenty-nine fixed effects fit.
+**Random Effects**
+The use of reltrad and state as random effects in our logistic regression model helps account for intra-group correlation and variability not explained by observed covariates, thus adhering to the assumptions of independence among residuals required by traditional logistic regression.  Religious tradition could have a significant impact on an individual’s satisfaction, which might vary significantly across different traditions but are not the primary variable of interest. By treating reltrad as a random effect, the model can account for differences in baselines across different traditions without estimating a separate parameter for each level of reltrad, thus simplifying the model and reducing the risk of overfitting.  
+
+
+Geographic differences (such as between different states) can affect satisfction due to factors like differing cultural norms, economic conditions, and local religious compositions. Including state as a random effect allows the model to account for these variations, acknowledging that baseline propensities towards satisfaction can vary by state.
+
+
+There are more proper ways of assessing the importance of random effect, but we would keep it somewhat “informal”, i.e. heuristical. We can compare the standard deviations of our random effects to coefficients of the fixed effects. If the magnitude is comparable, then we can say that there is variability in groups that is worth considering (relative to the magnitude of fixed effects). Let’s pick some statistically significant coefficients, e.g. variables X1, X2, X3, X4. The absolute values of those coefficients vary between X and Y. Comparing them to the standard deviation of random effects we can say that RANDOM_EFFECT_1 (reltrad) seems relatively important, while RANDOM_EFFECT_2 (state) not so much.
+
+
+
+
+
+### DHARMa Residuals
+```{r, fig.width=10, fig.height=5}
+library(DHARMa)
+
+# Create simulated residuals
+simulated_residuals_model <- simulateResiduals(fittedModel = logistic_model, n=500)
+
+# Plotting the simulated residuals
+plot(simulated_residuals_model)
+```
+
+
+**Conclusions:  **
+For each observed data point, the CDF of the simulated responses is calculated. This involves determining the proportion of simulated responses that are less than or equal to the observed response. The residuals are then transformed to be uniformly distributed by using the CDF values as the new residuals. Since our observed data point's CDF value is 0.5, then its DHARMa residual is 0.5. The transformed residuals are uniform on the interval [0, 1]. This uniformity makes them easy to interpret and compare.  
+
+A Q-Q plot of DHARMa residuals should ideally show points lying along the 45-degree line from the origin, indicating perfect uniformity. Deviations from this line suggest model misspecifications such as wrong link function or variance assumptions. But this was not the case as we can see from the DHARMa QQ plot.
+
+
+## Random Forest
+```{r, fig.width=10, fig.height=8}
+# Plot variable importance
+varImpPlot(rf_model)
+```
+
+**Conclusion: ** 
+We noticed that there were was a random effect (`state`) that exhibited low variance during our GLMM analysis, but for our feature selection on the Random Forest model it was the first/most favourable feature chosen by the model which signifies a false-positive. A potential reason for this would be that when features have more categories, they are likely to help in splitting data into purer subsets (which can cause overfitting) and will result in high perceived importance of a given feature. This `state` feature has 49 categories and is the feature having the most categories within the dataset.
+
+
+### Variable selection for Boruta
+```{r}
+print(selected_vars)
+```
+**Conclusion: **
+We utilized Boruta for feature selection. It is a feature selection algorithm specifically designed to find all relevant features and works well with Random Forest. It offers a thorough approach to feature selection, identifying all features that appear to be relevant to the target variable.
+From the Boruta's variable importance plot, we can see that the **Top features** that could potentially affect respondents satisfaction are socio-economic factors like (`age, sex, education`) and surprisingly it seems political views and affliations also play a role in satisfaction. Top variables were (`party, political ideology`)
+
+
+# H. Conclusion
+The main aim for this study was to explore two research questions. First was how Socio-Economic Factors Impact an individual's religious belief(believer/non-believer) and we found that some socio-economic factors such as age and sex may influence religiosity between different demographics. Our second research question employed the use of Generalized Linear Mixed Effects Models to determine whether Socio-Economic Factors Impact Individuals’ satisfaction. In this instance, we utilized satisfaction as a binary target, classifying "Dissatisfied" as 0 and "Satisfied" as 1. The results from our model signifies that socio-economic factors influence satisfaction of respondents both positively and negatively. We came to this conclusion through the intepretation of the **Log Odds** and **Odds Ratios** for the important variables fed into our model.  
+
+
+We used a simple heuristic: ${e}^LogOdds$ to produce our **Odds Ratios**. An **Odds Ratio (OR)**  above 1 indicates that as the predictor increases, the odds of being "Satisfied" increase, hence a positive impact. Conversely, an OR below 1 suggests a decrease in the odds of satisfaction as the predictor increases, reflecting a negative impact.  
+
+Then we took the general rule of:  
+- If $OR > 1$: $OR - 1 * 100$ indicates the percentage increase in the odds.
+- If $OR < 1$: $1 - OR * 100$ indicates the percentage decrease in the odds.
+
+
+
+# I. References
+1. Day, J. M. (2017). Religion and human development in adulthood: Well-being, prosocial behavior, and religious and spiritual development. Behavioral Development Bulletin, 22(2), 298–313. https://doi.org/10.1037/bdb0000031 
+
+
+2. Graham, C., & Crown, S. (2014). Religion and wellbeing around the World: Social Purpose, social time, or social insurance? International Journal of Wellbeing, 4(1), 1–27. https://doi.org/10.5502/ijw.v4i1.1 
+
+
+3. Koburtay, T., Jamali, D., & Aljafari, A. (2022). Religion, spirituality, and well‐being: A systematic literature review and futuristic agenda. Business Ethics, the Environment &amp; Responsibility, 32(1), 341–357. https://doi.org/10.1111/beer.12478 
+
+
+4. Koenig, H. G., VanderWeele, T. J., & Peteet, J. R. (2024). Understanding the religion, mental, and Social Health Relationship. Handbook of Religion and Health, 301–314. https://doi.org/10.1093/oso/9780190088859.003.0016 
+
+
+5. Lim, C., & Putnam, R. D. (2010, December). Religion, social networks, and life satisfaction. Religion, Social Networks, and Life Satisfaction. https://www.jstor.org/stable/25782172  
+
+
+6. Nezlek, J. B. (2021). Relationships among belief in god, well-being, and social capital in the 2020 European and world values surveys: Distinguishing interpersonal and ideological prosociality. Journal of Religion and Health, 61(3), 2569–2588. https://doi.org/10.1007/s10943-021-01411-6 
+
+
+7. Pew Research Center. (2007). U.S. Religious Landscape Survey. Retrieved from https://www.pewresearch.org/religion/dataset/u-s-religious-landscape-survey/ 
+
+
+8. Robyn D., Elizabeth E., and Larry L. (2008, June). Faith and Politics: The Influence of Religious Beliefs on Political Participation. https://www-jstor-org.ezproxy.library.dal.ca/stable/42956315 
+
+ 
+
+9. Rubin, J., Woessmann, L., & Becker, S. O. (2020, July 12). Recent insights on the role of religion in economic history. Centre for Economic Policy Research. https://cepr.org/voxeu/columns/recent-insights-role-religion-economic-history 
+
+
+10. Schieman, S. (2010, February 10). Socioeconomic status and beliefs about God’s influence in everyday life. https://academic.oup.com/socrel/article/71/1/25/1622317 
+
+
+11. UNESCO. (2011). The International Standard Classification of Education (ISCED). Prospects. https://doi.org/10.1007/BF02207511 
+
