@@ -10,8 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list=ls())
 ```
 
-Small demos
-
 # A. Abstract
 Today’s dynamic religious landscape shows us that where people come from, how much they earn, and what they know, and other socio-economic factors, can influence their beliefs and how they practice religion. This study uses detailed data from the US Religious Landscape Survey by the **Pew Forum on Religion & Public Life** to explore how socio-economic status (or SES for short), and other factors affect religious participation.
 
